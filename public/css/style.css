@@ -98,8 +98,8 @@ nav ul li a:hover {
 }
 
 .avatar img {
-    width: 150px; /* Set width of avatar */
-    height: 150px; /* Set height of avatar */
+    width: 200px; /* Set width of avatar */
+    height: 200px; /* Set height of avatar */
     border-radius: 50%;
     object-fit: cover;
 }
