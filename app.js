@@ -2,6 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const session = require('express-session');
 const app = express();
+const path = require('path');
 const port = 3000;
 
 const DISCORD_CLIENT_ID = '1263677707099574353';
