@@ -38,6 +38,10 @@ app.get('/auth/discord', (req, res) => {
     res.redirect(authorizeUrl);
 });
 
+app.get('/discord', (req, res) => {
+    res.redirect('https://discord.gg/jemmasinclair');
+});
+
 app.get('/auth/discord/callback', async (req, res) => {
     const code = req.query.code;
 
