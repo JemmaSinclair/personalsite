@@ -1,6 +1,8 @@
-const express = require('express');
-const axios = require('axios');
-const session = require('express-session');
+import express, { Request, Response } from 'express';
+import axios from 'axios';
+import session from 'express-session';
+import { SessionData } from 'express-session';
+
 const app = express();
 const port = 3000;
 
@@ -12,18 +14,33 @@ const DISCORD_REDIRECT_URI = 'http://lightwen.com/auth/discord/callback';
 const ALLOWED_IP = '75.4.106.63';
 const ALLOWED_DISCORD_USER_ID = '140333465596985345';
 
-app.use(session({
-    secret: 'a53iaoff93juf0Afj909J9F09h09F09H',
-    resave: false,
-    saveUninitialized: true
-}));
+interface SessionWithUser extends SessionData {
+    user?: {
+        id: string;
+        username: string;
+        discriminator: string;
+    };
+}
+
+app.use(
+    session({
+        secret: 'a53iaoff93juf0Afj909J9F09h09F09H',
+        resave: false,
+        saveUninitialized: true,
+    })
+);
 
 app.use(express.static('public'));
 app.set('view engine', 'ejs');
 
-app.get('/', (req, res) => {
+// Type definition for the request object with session
+interface RequestWithSession extends Request {
+    session: SessionWithUser;
+}
+
+app.get('/', (req: RequestWithSession, res: Response) => {
     const user = req.session.user;
-    const clientIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const clientIp = (req.headers['x-forwarded-for'] as string) || req.connection.remoteAddress;
 
     // Check if the login button should be shown
     const showLoginButton = clientIp === ALLOWED_IP;
@@ -31,36 +48,42 @@ app.get('/', (req, res) => {
     res.render('index', { user, showLoginButton });
 });
 
-app.get('/auth/discord', (req, res) => {
-    const authorizeUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(DISCORD_REDIRECT_URI)}&response_type=code&scope=identify`;
+app.get('/auth/discord', (req: Request, res: Response) => {
+    const authorizeUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(
+        DISCORD_REDIRECT_URI
+    )}&response_type=code&scope=identify`;
     res.redirect(authorizeUrl);
 });
 
-app.get('/auth/discord/callback', async (req, res) => {
-    const code = req.query.code;
+app.get('/auth/discord/callback', async (req: RequestWithSession, res: Response) => {
+    const code = req.query.code as string;
 
     if (!code) {
         return res.send('No code provided');
     }
 
     try {
-        const tokenResponse = await axios.post('https://discord.com/api/oauth2/token', new URLSearchParams({
-            client_id: DISCORD_CLIENT_ID,
-            client_secret: DISCORD_CLIENT_SECRET,
-            code,
-            grant_type: 'authorization_code',
-            redirect_uri: DISCORD_REDIRECT_URI,
-            scope: 'identify'
-        }).toString(), {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
+        const tokenResponse = await axios.post(
+            'https://discord.com/api/oauth2/token',
+            new URLSearchParams({
+                client_id: DISCORD_CLIENT_ID,
+                client_secret: DISCORD_CLIENT_SECRET,
+                code,
+                grant_type: 'authorization_code',
+                redirect_uri: DISCORD_REDIRECT_URI,
+                scope: 'identify',
+            }).toString(),
+            {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
             }
-        });
+        );
 
         const userResponse = await axios.get('https://discord.com/api/users/@me', {
             headers: {
-                'Authorization': `Bearer ${tokenResponse.data.access_token}`
-            }
+                Authorization: `Bearer ${tokenResponse.data.access_token}`,
+            },
         });
 
         const user = userResponse.data;
@@ -72,7 +95,7 @@ app.get('/auth/discord/callback', async (req, res) => {
 
         req.session.user = user;
         res.redirect('/');
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error:', error.response ? error.response.data : error.message);
         res.send('An error occurred');
     }
