@@ -1,14 +1,14 @@
 {
   "version": 2,
   "functions": {
-    "api/app.js": {
-      "runtime": "nodejs14.x"
+    "app.js": {
+      "runtime": "nodejs20.x"
     }
   },
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/api/app.js"
+      "dest": "app.js"
     }
   ]
 }
